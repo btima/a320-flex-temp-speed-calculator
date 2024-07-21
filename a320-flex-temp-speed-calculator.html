@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airbus A320 Flex Temperature and Speed Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        label, input, select {
+            display: block;
+            margin-bottom: 10px;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 5px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #results {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Airbus A320 Flex Temperature and Speed Calculator</h1>
+    <form id="calculator">
+        <label for="aircraft-type">A320 Variant:</label>
+        <select id="aircraft-type">
+            <option value="A320-100">A320-100</option>
+            <option value="A320-200">A320-200</option>
+            <option value="A320neo">A320neo</option>
+        </select>
+
+        <label for="engine-type">Engine Type:</label>
+        <select id="engine-type"></select>
+
+        <label for="oat">Outside Air Temperature (°C):</label>
+        <input type="number" id="oat" required>
+
+        <label for="elevation">Airport Elevation (ft):</label>
+        <input type="number" id="elevation" required>
+
+        <label for="runway-length">Runway Length (m):</label>
+        <input type="number" id="runway-length" required>
+
+        <label for="wind">Wind Component (kt):</label>
+        <input type="number" id="wind" required>
+
+        <label for="runway-condition">Runway Condition:</label>
+        <select id="runway-condition">
+            <option value="dry">Dry</option>
+            <option value="wet">Wet</option>
+        </select>
+
+        <label for="takeoff-weight">Takeoff Weight (kg):</label>
+        <input type="number" id="takeoff-weight" required>
+
+        <label for="flap-setting">Flap Setting:</label>
+        <select id="flap-setting">
+            <option value="1+F">1+F</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
+
+        <button type="submit">Calculate</button>
+    </form>
+
+    <div id="results"></div>
+
+    <script>
+        const engineOptions = {
+            'A320-100': ['CFM56-5A1'],
+            'A320-200': ['CFM56-5A3', 'IAE V2500-A1'],
+            'A320neo': ['CFM LEAP-1A', 'PW1100G-JM']
+        };
+
+        function updateEngineOptions() {
+            const aircraftType = document.getElementById('aircraft-type').value;
+            const engineSelect = document.getElementById('engine-type');
+            engineSelect.innerHTML = '';
+            engineOptions[aircraftType].forEach(engine => {
+                const option = document.createElement('option');
+                option.value = engine;
+                option.textContent = engine;
+                engineSelect.appendChild(option);
+            });
+        }
+
+        document.getElementById('aircraft-type').addEventListener('change', updateEngineOptions);
+
+        // Initial call to populate engine options
+        updateEngineOptions();
+
+        document.getElementById('calculator').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const aircraftType = document.getElementById('aircraft-type').value;
+            const engineType = document.getElementById('engine-type').value;
+            const oat = parseFloat(document.getElementById('oat').value);
+            const elevation = parseFloat(document.getElementById('elevation').value);
+            const runwayLength = parseFloat(document.getElementById('runway-length').value);
+            const wind = parseFloat(document.getElementById('wind').value);
+            const runwayCondition = document.getElementById('runway-condition').value;
+            const takeoffWeight = parseFloat(document.getElementById('takeoff-weight').value);
+            const flapSetting = document.getElementById('flap-setting').value;
+
+            // Placeholder calculations - these are not accurate and should be replaced with actual A320 performance data
+            let baseSpeed, weightFactor, elevationFactor;
+
+            switch(aircraftType) {
+                case 'A320-100':
+                    baseSpeed = 99;
+                    weightFactor = 0.088;
+                    elevationFactor = 0.0024;
+                    break;
+                case 'A320-200':
+                    baseSpeed = 100;
+                    weightFactor = 0.09;
+                    elevationFactor = 0.0025;
+                    break;
+                case 'A320neo':
+                    baseSpeed = 98;
+                    weightFactor = 0.085;
+                    elevationFactor = 0.0022;
+                    break;
+            }
+
+            const engineFactor = (engineType.includes('LEAP') || engineType.includes('PW1100G')) ? 0.98 : 1;
+
+            const flexTemp = oat + (elevation / 1000) - (wind / 5);
+            const v1 = (baseSpeed + (takeoffWeight / 1000) * weightFactor + (elevation / 1000) * elevationFactor + (wind / 2)) * engineFactor;
+            const vr = v1 + 10;
+            const v2 = vr + 15;
+
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <p>Aircraft: ${aircraftType}</p>
+                <p>Engine: ${engineType}</p>
+                <p>Flex Temperature: ${flexTemp.toFixed(1)} °C</p>
+                <p>V1: ${v1.toFixed(0)} kt</p>
+                <p>VR: ${vr.toFixed(0)} kt</p>
+                <p>V2: ${v2.toFixed(0)} kt</p>
+            `;
+        });
+    </script>
+</body>
+</html>
