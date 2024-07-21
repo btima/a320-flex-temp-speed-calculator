@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airbus A320 Flex Temperature and Speed Calculator</title>
+    <title>Estimateur Performance A320-200</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,127 +31,103 @@
             margin-top: 20px;
             font-weight: bold;
         }
+
     </style>
 </head>
 <body>
-    <h1>Airbus A320 Flex Temperature and Speed Calculator</h1>
+    <h1>Estimateur Détaillé de Performance A320-200</h1>
     <form id="calculator">
-        <label for="aircraft-type">A320 Variant:</label>
-        <select id="aircraft-type">
-            <option value="A320-100">A320-100</option>
-            <option value="A320-200">A320-200</option>
-            <option value="A320neo">A320neo</option>
-        </select>
-
-        <label for="engine-type">Engine Type:</label>
-        <select id="engine-type"></select>
-
-        <label for="oat">Outside Air Temperature (°C):</label>
+        <label for="oat">Température extérieure (OAT) (°C) :</label>
         <input type="number" id="oat" required>
 
-        <label for="elevation">Airport Elevation (ft):</label>
-        <input type="number" id="elevation" required>
+        <label for="pressure-altitude">Altitude-pression (ft) :</label>
+        <input type="number" id="pressure-altitude" required>
 
-        <label for="runway-length">Runway Length (m):</label>
+        <label for="runway-length">Longueur de piste disponible (m) :</label>
         <input type="number" id="runway-length" required>
 
-        <label for="wind">Wind Component (kt):</label>
-        <input type="number" id="wind" required>
+        <label for="runway-slope">Pente de la piste (%) :</label>
+        <input type="number" id="runway-slope" step="0.1" required>
 
-        <label for="runway-condition">Runway Condition:</label>
-        <select id="runway-condition">
-            <option value="dry">Dry</option>
-            <option value="wet">Wet</option>
-        </select>
+        <label for="wind-component">Composante de vent (kt, + pour vent de face) :</label>
+        <input type="number" id="wind-component" required>
 
-        <label for="takeoff-weight">Takeoff Weight (kg):</label>
+        <label for="takeoff-weight">Masse au décollage (kg) :</label>
         <input type="number" id="takeoff-weight" required>
 
-        <label for="flap-setting">Flap Setting:</label>
-        <select id="flap-setting">
+        <label for="flap-setting">Configuration des volets :</label>
+        <select id="flap-setting" required>
             <option value="1+F">1+F</option>
             <option value="2">2</option>
             <option value="3">3</option>
         </select>
 
-        <button type="submit">Calculate</button>
+        <label for="runway-condition">État de la piste :</label>
+        <select id="runway-condition" required>
+            <option value="dry">Sèche</option>
+            <option value="wet">Mouillée</option>
+        </select>
+
+        <label for="engine-type">Type de moteur :</label>
+        <select id="engine-type" required>
+            <option value="CFM56-5B">CFM56-5B</option>
+            <option value="IAE-V2500">IAE V2500</option>
+        </select>
+
+        <button type="submit">Estimer</button>
     </form>
 
     <div id="results"></div>
 
     <script>
-        const engineOptions = {
-            'A320-100': ['CFM56-5A1'],
-            'A320-200': ['CFM56-5A3', 'IAE V2500-A1'],
-            'A320neo': ['CFM LEAP-1A', 'PW1100G-JM']
-        };
-
-        function updateEngineOptions() {
-            const aircraftType = document.getElementById('aircraft-type').value;
-            const engineSelect = document.getElementById('engine-type');
-            engineSelect.innerHTML = '';
-            engineOptions[aircraftType].forEach(engine => {
-                const option = document.createElement('option');
-                option.value = engine;
-                option.textContent = engine;
-                engineSelect.appendChild(option);
-            });
-        }
-
-        document.getElementById('aircraft-type').addEventListener('change', updateEngineOptions);
-
-        // Initial call to populate engine options
-        updateEngineOptions();
-
         document.getElementById('calculator').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const aircraftType = document.getElementById('aircraft-type').value;
-            const engineType = document.getElementById('engine-type').value;
             const oat = parseFloat(document.getElementById('oat').value);
-            const elevation = parseFloat(document.getElementById('elevation').value);
+            const pressureAltitude = parseFloat(document.getElementById('pressure-altitude').value);
             const runwayLength = parseFloat(document.getElementById('runway-length').value);
-            const wind = parseFloat(document.getElementById('wind').value);
-            const runwayCondition = document.getElementById('runway-condition').value;
+            const runwaySlope = parseFloat(document.getElementById('runway-slope').value);
+            const windComponent = parseFloat(document.getElementById('wind-component').value);
             const takeoffWeight = parseFloat(document.getElementById('takeoff-weight').value);
             const flapSetting = document.getElementById('flap-setting').value;
+            const runwayCondition = document.getElementById('runway-condition').value;
+            const engineType = document.getElementById('engine-type').value;
 
-            // Placeholder calculations - these are not accurate and should be replaced with actual A320 performance data
-            let baseSpeed, weightFactor, elevationFactor;
+            // Estimations plus détaillées mais toujours approximatives
+            const temperatureRef = oat + (pressureAltitude / 1000) * 2;
+            
+            // Estimation de la température flex
+            let flexTemp = Math.min(temperatureRef + 25, 65);
+            if (takeoffWeight > 70000) flexTemp = Math.min(flexTemp, 62);
+            if (runwayLength < 2500) flexTemp = Math.min(flexTemp, 58);
+            flexTemp -= runwaySlope * 0.5; // Ajustement pour la pente
+            flexTemp += windComponent * 0.2; // Ajustement pour le vent
 
-            switch(aircraftType) {
-                case 'A320-100':
-                    baseSpeed = 99;
-                    weightFactor = 0.088;
-                    elevationFactor = 0.0024;
-                    break;
-                case 'A320-200':
-                    baseSpeed = 100;
-                    weightFactor = 0.09;
-                    elevationFactor = 0.0025;
-                    break;
-                case 'A320neo':
-                    baseSpeed = 98;
-                    weightFactor = 0.085;
-                    elevationFactor = 0.0022;
-                    break;
-            }
+            // Estimations des vitesses
+            let v1Base = 135 + (takeoffWeight - 60000) / 1000 + (temperatureRef - 15) * 0.3;
+            v1Base -= windComponent * 0.5; // Ajustement pour le vent
+            v1Base += runwaySlope * 2; // Ajustement pour la pente
 
-            const engineFactor = (engineType.includes('LEAP') || engineType.includes('PW1100G')) ? 0.98 : 1;
+            // Ajustements pour la configuration des volets
+            if (flapSetting === "2") v1Base -= 2;
+            if (flapSetting === "3") v1Base -= 4;
 
-            const flexTemp = oat + (elevation / 1000) - (wind / 5);
-            const v1 = (baseSpeed + (takeoffWeight / 1000) * weightFactor + (elevation / 1000) * elevationFactor + (wind / 2)) * engineFactor;
-            const vr = v1 + 10;
+            // Ajustement pour l'état de la piste
+            const v1 = runwayCondition === "wet" ? v1Base * 1.05 : v1Base;
+
+            const vr = v1 + 5;
             const v2 = vr + 15;
+
+            // Ajustement pour le type de moteur
+            const engineFactor = engineType === "IAE-V2500" ? 1.02 : 1;
 
             const results = document.getElementById('results');
             results.innerHTML = `
-                <p>Aircraft: ${aircraftType}</p>
-                <p>Engine: ${engineType}</p>
-                <p>Flex Temperature: ${flexTemp.toFixed(1)} °C</p>
-                <p>V1: ${v1.toFixed(0)} kt</p>
-                <p>VR: ${vr.toFixed(0)} kt</p>
-                <p>V2: ${v2.toFixed(0)} kt</p>
+                <p>Température de référence estimée : ${temperatureRef.toFixed(1)} °C</p>
+                <p>Température flex estimée : ${flexTemp.toFixed(1)} °C</p>
+                <p>V1 estimée : ${(v1 * engineFactor).toFixed(0)} kt</p>
+                <p>VR estimée : ${(vr * engineFactor).toFixed(0)} kt</p>
+                <p>V2 estimée : ${(v2 * engineFactor).toFixed(0)} kt</p>
             `;
         });
     </script>
